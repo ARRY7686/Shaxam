@@ -1,18 +1,36 @@
-import json
-import os
-
-DB_PATH = "fingerprints/db.json"
+from src.db_connection import get_connection
 
 def add_song(song_name, fingerprints):
-    db = load_db()
-    
-    fingerprints_cleaned = [(str(h), int(t)) for h, t in fingerprints]
-    db[song_name] = fingerprints_cleaned
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    with open(DB_PATH, "w") as f:
-        json.dump(db, f)
-def load_db():
-    if not os.path.exists(DB_PATH):
-        return {}
-    with open(DB_PATH, "r") as f:
-        return json.load(f)
+    cursor.execute("INSERT IGNORE INTO songs (name) VALUES (%s)", (song_name,))
+    conn.commit()
+
+    cursor.execute("SELECT id FROM songs WHERE name = %s", (song_name,))
+    song_id = cursor.fetchone()[0]
+
+    data = [(int(song_id), str(h), int(t)) for h, t in fingerprints]
+    cursor.executemany("INSERT INTO fingerprints (song_id, hash, offset) VALUES (%s, %s, %s)", data)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+def get_all_fingerprints():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.name, f.hash, f.offset
+        FROM songs s
+        JOIN fingerprints f ON s.id = f.song_id
+    """)
+    rows = cursor.fetchall()
+
+    db = {}
+    for name, h, t in rows:
+        db.setdefault(name, []).append((h, t))
+
+    cursor.close()
+    conn.close()
+    return db

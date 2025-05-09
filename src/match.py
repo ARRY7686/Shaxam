@@ -1,8 +1,8 @@
-from src.database import load_db
+from src.database import get_all_fingerprints
 from collections import defaultdict
 
 def match_fingerprint(fingerprint, return_matches=False):
-    db = load_db()
+    db = get_all_fingerprints()
     matches = []
     alignments = {}
 
