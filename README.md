@@ -8,6 +8,7 @@
 - Store and manage fingerprints in a **MySQL database**.
 - Match audio clips against stored songs and return confidence scores.
 - Visualize alignment between input and matched songs.
+- Record audio clips directly from your microphone for matching.
 
 ## 📦 Installation
 
@@ -50,6 +51,12 @@ You’ll be prompted to enter the song name, which will be stored with its finge
 python main.py match path/to/clip.mp3
 ```
 
+### Record from microphone and match:
+```bash
+python main.py mic {duration}
+```
+This command records a short audio clip via your microphone and attempts to match it against the database.
+
 ### Example Output
 ```
 Matched: Rick Astley - Never Gonna Give You Up (Confidence: 87.5%)
@@ -70,6 +77,7 @@ A match alignment plot will also be displayed showing the timestamp correlation 
 │   ├── db_connection.py         # Manages MySQL connection via dotenv
 │   ├── generate_fingerprint.py # Audio loading, STFT, peak detection, hashing
 │   ├── match.py                 # Matching algorithm and scoring
+│   ├── mic_record.py           # Microphone audio recording
 │   └── plot.py                  # Visualization of alignment
 ├── audio/                   # Sample audio files
 ```
@@ -82,6 +90,8 @@ A match alignment plot will also be displayed showing the timestamp correlation 
 - `matplotlib` – plotting match alignment
 - `mysql-connector-python` – MySQL database driver
 - `python-dotenv` – load DB config from `.env` file
+- `sounddevice` – microphone audio capture
+- `soundfile` – save recorded audio as .wav
 
 ## 🛠 Todo
 
