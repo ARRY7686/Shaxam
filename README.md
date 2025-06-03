@@ -1,5 +1,9 @@
 # Shaxam
+
+
 **This Model is working for the Non Copyright Songs I provided but you can always use the songs you want to train your custom model**
+
+
 **Shaxam** is a Python-based audio fingerprinting and matching tool inspired by the Shazam algorithm. It enables you to add songs to a SQLite-backed fingerprint database and match unknown audio clips against it.
 
 ## 🎧 Features
