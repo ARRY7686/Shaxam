@@ -1,5 +1,5 @@
 # Shaxam
-
+**This Model is working for the Non Copyright Songs I provided but you can always use the songs you want to train your custom model**
 **Shaxam** is a Python-based audio fingerprinting and matching tool inspired by the Shazam algorithm. It enables you to add songs to a SQLite-backed fingerprint database and match unknown audio clips against it.
 
 ## 🎧 Features
@@ -60,7 +60,7 @@ A match alignment plot will also be displayed showing the timestamp correlation 
 ├── .env                     # Environment variables for DB connection
 ├── src/
 │   ├── database.py              # Handles DB insert/query logic
-│   ├── db_connection.py         # Manages MySQL connection via dotenv
+│   ├── db_connection.py         # Manages SQLite connection via dotenv
 │   ├── generate_fingerprint.py # Audio loading, STFT, peak detection, hashing
 │   ├── match.py                 # Matching algorithm and scoring
 │   ├── mic_record.py           # Microphone audio recording
@@ -75,7 +75,6 @@ A match alignment plot will also be displayed showing the timestamp correlation 
 - `scipy` – peak filtering
 - `matplotlib` – plotting match alignment
 - `mysql-connector-python` – MySQL database driver
-- `python-dotenv` – load DB config from `.env` file
 - `sounddevice` – microphone audio capture
 - `soundfile` – save recorded audio as .wav
 - `seaborn` - plotting purposes
