@@ -5,6 +5,8 @@ from src.match import match_fingerprint
 from src.plot import plot_alignment
 from src.mic_record import record_audio  # You defined this in mic_record.py
 
+print("Imports Successful!")
+
 def main():
     mode = sys.argv[1]
 

@@ -4,22 +4,29 @@ def add_song(song_name, fingerprints):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("INSERT IGNORE INTO songs (name) VALUES (%s)", (song_name,))
+    # Insert or ignore song by name
+    cursor.execute("INSERT OR IGNORE INTO songs (name) VALUES (?)", (song_name,))
     conn.commit()
 
-    cursor.execute("SELECT id FROM songs WHERE name = %s", (song_name,))
+    # Get the song ID
+    cursor.execute("SELECT id FROM songs WHERE name = ?", (song_name,))
     song_id = cursor.fetchone()[0]
 
+    # Prepare fingerprint data
     data = [(int(song_id), str(h), int(t)) for h, t in fingerprints]
-    cursor.executemany("INSERT INTO fingerprints (song_id, hash, offset) VALUES (%s, %s, %s)", data)
+    cursor.executemany(
+        "INSERT INTO fingerprints (song_id, hash, offset) VALUES (?, ?, ?)", data
+    )
     conn.commit()
 
     cursor.close()
     conn.close()
 
+
 def get_all_fingerprints():
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
         SELECT s.name, f.hash, f.offset
         FROM songs s
