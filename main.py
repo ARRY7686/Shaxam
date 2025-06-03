@@ -23,8 +23,8 @@ def main():
         result, alignments = match_fingerprint(fp, return_matches=True)
         print("Matches:")
         for song, score, confidence in result:
-            print(f"Matched: {song} (Confidence: {confidence * 100:.1f}%)")
-            plot_alignment(alignments)
+            print(f"Matched: {song} (Confidence: {confidence * 100:.1f}%)")  
+        plot_alignment(alignments)
 
     elif mode == "mic":
         duration = int(sys.argv[2]) if len(sys.argv) > 2 else 5
@@ -33,8 +33,8 @@ def main():
         result, alignments = match_fingerprint(fp, return_matches=True)
         print("Matches:")
         for song, score, confidence in result:
-            print(f"Matched: {song} (Confidence: {confidence * 100:.1f}%)")
-            plot_alignment(alignments)
+            print(f"Matched: {song} (Confidence: {confidence * 100:.1f}%)")    
+        plot_alignment(alignments)
 
 if __name__ == "__main__":
     main()

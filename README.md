@@ -1,11 +1,11 @@
 # Shaxam
 
-**Shaxam** is a Python-based audio fingerprinting and matching tool inspired by the Shazam algorithm. It enables you to add songs to a MySQL-backed fingerprint database and match unknown audio clips against it.
+**Shaxam** is a Python-based audio fingerprinting and matching tool inspired by the Shazam algorithm. It enables you to add songs to a SQLite-backed fingerprint database and match unknown audio clips against it.
 
 ## 🎧 Features
 
 - Generate audio fingerprints using frequency peaks and SHA-1 hashing.
-- Store and manage fingerprints in a **MySQL database**.
+- Store and manage fingerprints in a **SQLite database**.
 - Match audio clips against stored songs and return confidence scores.
 - Visualize alignment between input and matched songs.
 - Record audio clips directly from your microphone for matching.
@@ -24,27 +24,13 @@ Or if using `pyproject.toml`:
 pip install .
 ```
 
-### Database Setup
-
-Create a MySQL database and provide the connection details using a `.env` file in the project root:
-
-```
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_NAME=shaxam
-```
-
-Run the initial SQL setup script (if provided) or create the necessary `songs` and `fingerprints` tables.
-
 ## 🚀 Usage
 
 ### Add a song to the database:
 ```bash
 python main.py add path/to/song.mp3
 ```
-You’ll be prompted to enter the song name, which will be stored with its fingerprint in MySQL.
+You’ll be prompted to enter the song name, which will be stored with its fingerprint in SQLite.
 
 ### Match a clip against the database:
 ```bash
@@ -92,6 +78,7 @@ A match alignment plot will also be displayed showing the timestamp correlation 
 - `python-dotenv` – load DB config from `.env` file
 - `sounddevice` – microphone audio capture
 - `soundfile` – save recorded audio as .wav
+- `seaborn` - plotting purposes
 
 ## 🛠 Todo
 

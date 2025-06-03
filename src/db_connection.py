@@ -5,4 +5,4 @@ import os
 load_dotenv()
 
 def get_connection():
-    return sqlite3.connect(os.getenv("SQLITE_DB_PATH", "shaxam.sqlite"))
+    return sqlite3.connect(os.getenv("../shaxam.sqlite", "shaxam.sqlite"))

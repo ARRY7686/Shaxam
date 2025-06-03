@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
-print("Matplotlib version")
 import seaborn as sns
-print("Seaborn version:")
 import numpy as np
 
 def plot_alignment(alignments):
@@ -9,7 +7,6 @@ def plot_alignment(alignments):
         print("No alignment points to plot.")
         return
 
-    # Set a modern style
     sns.set(style="whitegrid", context="talk")
 
     plt.figure(figsize=(12, 8))
@@ -21,7 +18,6 @@ def plot_alignment(alignments):
         x_vals, y_vals = zip(*points)
         plt.scatter(x_vals, y_vals, s=60, alpha=0.8, color=palette[i], label=song_name, edgecolors='k')
 
-        # Optionally add a trendline (linear fit)
         if len(x_vals) > 1:
             z = np.polyfit(x_vals, y_vals, 1)
             p = np.poly1d(z)

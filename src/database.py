@@ -4,15 +4,13 @@ def add_song(song_name, fingerprints):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Insert or ignore song by name
     cursor.execute("INSERT OR IGNORE INTO songs (name) VALUES (?)", (song_name,))
     conn.commit()
 
-    # Get the song ID
+    
     cursor.execute("SELECT id FROM songs WHERE name = ?", (song_name,))
     song_id = cursor.fetchone()[0]
 
-    # Prepare fingerprint data
     data = [(int(song_id), str(h), int(t)) for h, t in fingerprints]
     cursor.executemany(
         "INSERT INTO fingerprints (song_id, hash, offset) VALUES (?, ?, ?)", data
