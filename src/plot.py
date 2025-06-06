@@ -1,14 +1,17 @@
+import matplotlib
+matplotlib.use("Agg")  
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import io
+import base64
 
-def plot_alignment(alignments):
+def plot_alignment_as_base64(alignments):
     if not alignments:
-        print("No alignment points to plot.")
-        return
+        return None
 
     sns.set(style="whitegrid", context="talk")
-
     plt.figure(figsize=(12, 8))
 
     palette = sns.color_palette("husl", len(alignments))
@@ -16,7 +19,7 @@ def plot_alignment(alignments):
         if not points:
             continue
         x_vals, y_vals = zip(*points)
-        plt.scatter(x_vals, y_vals, s=60, alpha=0.8, color=palette[i], label=song_name, edgecolors='k')
+        plt.scatter(x_vals, y_vals, s=60, alpha=0.8, color=palette[i], label=song_name)  # removed edgecolors
 
         if len(x_vals) > 1:
             z = np.polyfit(x_vals, y_vals, 1)
@@ -28,4 +31,11 @@ def plot_alignment(alignments):
     plt.title("Fingerprint Match Alignment", fontsize=16)
     plt.legend(title="Matched Song", fontsize=12)
     plt.tight_layout()
-    plt.show()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+
+    img_base64 = base64.b64encode(buf.read()).decode("utf-8")
+    return img_base64
