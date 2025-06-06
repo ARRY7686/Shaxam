@@ -71,11 +71,18 @@ Or if using ```pyproject.toml```:
 ```bash
 cd electron-app
 npm install
-```
 
+```bash
+  SPOTIFY_CLIENT_ID="your_client_ID"
+  SPOTIFY_CLIENT_SECRET="your_client_secret"
+
+```
 ---
 
 ## ▶️ Running the App
+
+## Get the environmental variables from spotify
+
 
 ### Start the Flask backend:
 ```bash
