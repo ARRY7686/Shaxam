@@ -8,6 +8,8 @@ This project combines:
 - ⚛️ **React + Tailwind CSS** — For a responsive and animated frontend UI.
 - 🐍 **Flask** — For a lightweight Python backend API.
 - 📊 **Matplotlib + Seaborn** — For generating visualizations of fingerprint matches.
+- 📈 **Sqlite** - A file based database which is lightweight.
+
 
 ---
 
@@ -20,7 +22,8 @@ This project combines:
 - 🔀 **Electron Integration**: Desktop-friendly, packaged React app.
 - 🔊 **Microphone Input**: Captures 5 seconds of audio on recognition request.
 - 🔄 **Cross-Origin Support**: CORS enabled for React ↔ Flask communication.
-- 📈 **SHA-1 Hashing**: Uses SHA-1 Hashing to hash the peaks which ensure minimal hash collisions
+- 📈 **SHA-1 Hashing**: Uses SHA-1 Hashing to hash the peaks which ensure minimal hash collisions.
+- 🆕 **Add Songs**: Add Songs from Spotify Links.
 
 ---
 
@@ -41,6 +44,8 @@ This project combines:
   - `generate_fingerprint.py` – creates audio fingerprints
   - `match.py` – performs fingerprint matching
   - `plot.py` – generates visual match alignment as base64 image
+  - `spotify_handler.py` - fetches the song metadata from the spotify link using spotify Web API
+  - `youtube_handler.py` - downloads the audio from web usng yt_dlp
 
 ---
 
@@ -91,16 +96,32 @@ This launches:
 
 ## 🧠 How It Works
 
+### 🎧 Recognize Song (Real-Time)
+
 1. User clicks **Recognize Song**.
-2. React sends a GET request to `/recognize` on the Flask server.
-3. Flask:
-   - Records 5 seconds of audio.
-   - Generates fingerprints.
-   - Matches against known fingerprints.
+2. React sends a `GET` request to `/recognize` on the Flask backend.
+3. Flask backend:
+   - Records 5 seconds of audio from the user's microphone.
+   - Generates a fingerprint using audio processing.
+   - Matches the fingerprint against stored fingerprints in the database.
    - Returns:
-     - Match results (titles + confidence).
-     - A base64-encoded PNG plot of fingerprint alignment.
-4. React displays results and renders plot in the UI.
+     - A list of match results (title + confidence score).
+     - A base64-encoded image showing alignment of matched fingerprint points.
+4. React displays the match results and renders the plot visually in the UI.
+
+### ➕ Add Song via Spotify Link
+
+1. User pastes a **Spotify track link** into the input field and clicks **Add Song**.
+2. React sends a `POST` request to `/add` with the `spotify_url` in the request body.
+3. Flask backend:
+   - Extracts the track ID from the Spotify link.
+   - Fetches track metadata (title, artist, album) using the Spotify API.
+   - Searches YouTube for an official audio version of the track.
+   - Downloads the audio using `yt-dlp`.
+   - Generates a fingerprint of the audio.
+   - Stores the fingerprint in the SQLite database.
+   - Deletes the temporary downloaded audio file.
+4. User is notified of success or failure through UI alerts.
 
 ---
 
@@ -122,6 +143,8 @@ This launches:
     ├── generate_fingerprint.py  # Generate audio fingerprints
     ├── match.py                 # Match fingerprints
     └── plot.py                  # Plot match alignment as base64 image
+    └── spotify_handler.py       # fetches the song metadata from the spotify link using spotify Web API
+    └── youtube_handler.py       # downloads the audio from web usng yt_dl      
 ```
 
 ---
@@ -151,7 +174,7 @@ Flask backend has CORS enabled for smooth communication between Electron (localh
 ---
 ## Future Plans
 
-Let user add their own songs and help train the database.
+also Let the user get the audio from the device they are using
 
 ## 📌 Notes
 
