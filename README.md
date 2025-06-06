@@ -1,13 +1,12 @@
 # 🎧 Shaxam
 
-**Shaxam** is an AI-powered music recognition desktop application that allows users to identify songs through audio fingerprinting. It offers a sleek UI, real-time audio recording, AI-based song matching, and visualization of audio fingerprint alignment.
+**Shaxam** is an Advance music recognition desktop application that allows users to identify songs through audio fingerprinting. It offers a sleek UI, real-time audio recording, AI-based song matching, and visualization of audio fingerprint alignment.
 
 This project combines:
 
 - 🖥 **Electron** — For building cross-platform desktop applications.
 - ⚛️ **React + Tailwind CSS** — For a responsive and animated frontend UI.
 - 🐍 **Flask** — For a lightweight Python backend API.
-- 🎙 **Custom Audio Recognition Engine** — For fingerprinting and matching audio data.
 - 📊 **Matplotlib + Seaborn** — For generating visualizations of fingerprint matches.
 
 ---
@@ -148,6 +147,9 @@ npm run electron  # Starts both React and Electron in parallel
 Flask backend has CORS enabled for smooth communication between Electron (localhost:3000) and Flask (localhost:5000).
 
 ---
+## Future Plans
+
+Let user add their own songs and help train the database.
 
 ## 📌 Notes
 
