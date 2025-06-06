@@ -15,28 +15,49 @@ from src.database import add_song
 app = Flask(__name__)
 CORS(app) 
 
-@app.route("/recognize", methods=["GET"])
+@app.route("/recognize", methods=["POST"])
 def recognize():
-    """Handles the song recognition request."""
+    """Handles song recognition from either mic input or uploaded audio file."""
     try:
+        audio_path = "mic_input.wav"
 
-        record_audio(duration=5, filename="mic_input.wav")
-        fingerprints = generate_fingerprint("mic_input.wav")
+        # Check if a file was uploaded
+        if "file" in request.files:
+            uploaded_file = request.files["file"]
+            if uploaded_file.filename == "":
+                return jsonify({"error": "Uploaded file has no name"}), 400
+
+            # Save uploaded file
+            audio_path = "uploaded_input.wav"
+            uploaded_file.save(audio_path)
+        else:
+            # No file uploaded, record from mic
+            record_audio(duration=5, filename=audio_path)
+
+        # Fingerprint generation and matching
+        fingerprints = generate_fingerprint(audio_path)
         results, alignment_points = match_fingerprint(fingerprints, return_matches=True)
 
+        # Prepare matches
         matches = []
         if results:
             for r in results:
                 matches.append({"title": r[0], "confidence": round(r[2], 2)})
 
+        # Create base64 plot
         img_base64 = plot_alignment_as_base64(alignment_points)
+
+        # Clean up if necessary
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
         return jsonify({
             "matches": matches,
             "plot": img_base64
         })
+
     except Exception as e:
-        traceback.print_exc() # Print full traceback for debugging
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/add", methods=["POST"])
@@ -65,20 +86,20 @@ def add_song_route(): # Renamed to avoid confusion with the internal helper func
 
         print(f"[INFO] Processing song: '{song_name}' by {artist_name}")
 
-        downloaded_file_path = "downloaded_audio.mp3" 
+        downloaded_file_path = "downloaded_audio" 
 
         checkBool = download_audio_from_youtube(song_name, [artist_name], output_path=downloaded_file_path)
         if not checkBool:
             return jsonify({"error": "Failed to download audio from YouTube"}), 500
 
-        if not os.path.exists(downloaded_file_path):
+        if not os.path.exists(f"{downloaded_file_path}.mp3"):
             # This check might still be useful if yt-dlp reports success but file isn't there for some edge case
             return jsonify({"error": "Downloaded audio file not found despite download attempt"}), 500
         
-        fingerprints = generate_fingerprint(downloaded_file_path)
+        fingerprints = generate_fingerprint(f"{downloaded_file_path}.mp3")
         add_song(song_name, fingerprints)
 
-        os.remove(downloaded_file_path)
+        os.remove(f"{downloaded_file_path}.mp3")
         print(f"[INFO] Successfully added '{song_name}' to the database and cleaned up temporary file.")
 
         return jsonify({"message": f"Song '{song_name}' by {artist_name} added successfully!"}), 200

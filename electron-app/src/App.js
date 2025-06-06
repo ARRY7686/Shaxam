@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./App.css"
+import "./App.css";
 
 function App() {
   const [matches, setMatches] = useState([]);
@@ -7,17 +7,37 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [addingLoading, setAddingLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const handleRecognize = async () => {
     setLoading(true);
+    setMatches([]);
+    setPlot("");
+
     try {
-      const res = await fetch("http://localhost:5000/recognize");
-      const data = await res.json();
+      let response;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        response = await fetch("http://localhost:5000/recognize", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        response = await fetch("http://localhost:5000/recognize", {
+          method: "POST",
+        });
+      }
+
+      const data = await response.json();
       setMatches(data.matches || []);
       setPlot(data.plot || "");
     } catch (err) {
       console.error("Recognition failed", err);
+      alert("Recognition failed");
     }
+
     setLoading(false);
   };
 
@@ -38,11 +58,11 @@ function App() {
           spotify_url: spotifyUrl
         })
       });
-      
+
       const data = await res.json();
       if (res.ok) {
         alert(`Song added successfully!`);
-        setSpotifyUrl(""); // Clear the input
+        setSpotifyUrl(""); // Clear input
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -55,9 +75,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900 text-white font-inter">
-      {/* Background pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
-      
+
       <div className="relative z-10 px-6 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -71,7 +90,7 @@ function App() {
             <p className="text-gray-400 text-lg">Discover music with AI-powered recognition</p>
           </div>
 
-          {/* Spotify Link Input */}
+          {/* Add Spotify Track */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <span className="w-2 h-6 bg-gradient-to-b from-green-500 to-green-400 rounded-full mr-3"></span>
@@ -107,7 +126,18 @@ function App() {
             </div>
           </div>
 
-          {/* Main Action Button */}
+          {/* File Upload */}
+          <div className="text-center mb-6">
+            <input
+              type="file"
+              accept="audio/*"
+              onChange={(e) => setSelectedFile(e.target.files[0])}
+              className="text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+            />
+            <p className="text-gray-500 text-sm mt-2">Upload an audio file (or leave empty to use mic)</p>
+          </div>
+
+          {/* Recognize Button */}
           <div className="text-center mb-12">
             <button
               onClick={handleRecognize}
@@ -116,12 +146,8 @@ function App() {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center space-x-3">
-                <span className="text-2xl">
-                  {loading ? "🎙️" : "🎵"}
-                </span>
-                <span>
-                  {loading ? "Listening..." : "Recognize Song"}
-                </span>
+                <span className="text-2xl">{loading ? "🎙️" : "🎵"}</span>
+                <span>{loading ? "Processing..." : "Recognize Song"}</span>
               </div>
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -131,15 +157,13 @@ function App() {
             </button>
           </div>
 
-          {/* Results Section */}
+          {/* Match Results */}
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Matches */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl">
               <h2 className="text-2xl font-semibold mb-6 flex items-center">
                 <span className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3"></span>
                 Match Results
               </h2>
-              
               <div className="space-y-4">
                 {matches.length === 0 ? (
                   <div className="text-center py-12">
@@ -157,14 +181,12 @@ function App() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white text-lg mb-1">
-                            {match.title}
-                          </h3>
+                          <h3 className="font-semibold text-white text-lg mb-1">{match.title}</h3>
                           <div className="flex items-center space-x-4">
                             <span className="text-sm text-gray-400">Confidence:</span>
                             <div className="flex items-center space-x-2">
                               <div className="w-24 h-2 bg-gray-600 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className="h-full bg-gradient-to-r from-green-500 to-blue-500 rounded-full transition-all duration-500"
                                   style={{ width: `${Math.min(match.confidence * 100, 100)}%` }}
                                 ></div>
@@ -183,13 +205,12 @@ function App() {
               </div>
             </div>
 
-            {/* Plot Visualization */}
+            {/* Plot Display */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl">
               <h2 className="text-2xl font-semibold mb-6 flex items-center">
                 <span className="w-2 h-8 bg-gradient-to-b from-green-500 to-blue-500 rounded-full mr-3"></span>
                 Audio Analysis
               </h2>
-              
               <div className="h-64 flex items-center justify-center">
                 {plot ? (
                   <div className="w-full h-full rounded-xl overflow-hidden bg-gray-900/50 p-4">

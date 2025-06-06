@@ -4,7 +4,7 @@ import os
 import yt_dlp
 from yt_dlp import YoutubeDL
 
-def download_audio_from_youtube(song_name,artists_names, output_path="downloaded_audio.mp3"):
+def download_audio_from_youtube(song_name,artists_names, output_path="downloaded_audio"):
     search_query = f"{song_name} by {'&'.join(artists_names)} official audio"
     print(f"[INFO] Searching for YouTube for: {search_query}")
 
