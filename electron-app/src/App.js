@@ -5,6 +5,8 @@ function App() {
   const [matches, setMatches] = useState([]);
   const [plot, setPlot] = useState("");
   const [loading, setLoading] = useState(false);
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [addingLoading, setAddingLoading] = useState(false);
 
   const handleRecognize = async () => {
     setLoading(true);
@@ -17,6 +19,38 @@ function App() {
       console.error("Recognition failed", err);
     }
     setLoading(false);
+  };
+
+  const handleAddSong = async () => {
+    if (!spotifyUrl.trim()) {
+      alert("Please enter a Spotify URL");
+      return;
+    }
+
+    setAddingLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          spotify_url: spotifyUrl
+        })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Song added successfully!`);
+        setSpotifyUrl(""); // Clear the input
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Add song failed", err);
+      alert("Failed to add song");
+    }
+    setAddingLoading(false);
   };
 
   return (
@@ -35,6 +69,42 @@ function App() {
               Shaxam
             </h1>
             <p className="text-gray-400 text-lg">Discover music with AI-powered recognition</p>
+          </div>
+
+          {/* Spotify Link Input */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center">
+              <span className="w-2 h-6 bg-gradient-to-b from-green-500 to-green-400 rounded-full mr-3"></span>
+              Add Spotify Track
+            </h2>
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={spotifyUrl}
+                  onChange={(e) => setSpotifyUrl(e.target.value)}
+                  placeholder="Paste Spotify track link here..."
+                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                />
+              </div>
+              <button
+                onClick={handleAddSong}
+                disabled={addingLoading || !spotifyUrl.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 rounded-lg font-semibold text-white hover:from-green-500 hover:to-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center space-x-2"
+              >
+                {addingLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🎵</span>
+                    <span>Add Song</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Main Action Button */}
