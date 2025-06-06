@@ -12,5 +12,7 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "scipy>=1.15.3",
     "sounddevice>=0.5.1",
-    "seaborn>=0.13.2"
+    "seaborn>=0.13.2",
+    "flask>=3.1.1",
+    "flask-cors>=6.0.0",
 ]

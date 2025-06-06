@@ -1,88 +1,156 @@
-**This Model is working for the Non Copyright Songs I provided but you can always use the songs you want to train your custom model**
+# 🎧 Shaxam
 
-# Shaxam
+**Shaxam** is an AI-powered music recognition desktop application that allows users to identify songs through audio fingerprinting. It offers a sleek UI, real-time audio recording, AI-based song matching, and visualization of audio fingerprint alignment.
 
-**Shaxam** is a Python-based audio fingerprinting and matching tool inspired by the Shazam algorithm. It enables you to add songs to a SQLite-backed fingerprint database and match unknown audio clips against it.
+This project combines:
 
-## 🎧 Features
+- 🖥 **Electron** — For building cross-platform desktop applications.
+- ⚛️ **React + Tailwind CSS** — For a responsive and animated frontend UI.
+- 🐍 **Flask** — For a lightweight Python backend API.
+- 🎙 **Custom Audio Recognition Engine** — For fingerprinting and matching audio data.
+- 📊 **Matplotlib + Seaborn** — For generating visualizations of fingerprint matches.
 
-- Generate audio fingerprints using frequency peaks and SHA-1 hashing.
-- Store and manage fingerprints in a **SQLite database**.
-- Match audio clips against stored songs and return confidence scores.
-- Visualize alignment between input and matched songs.
-- Record audio clips directly from your microphone for matching.
+---
 
-## 📦 Installation
+## 🌟 Features
 
-Ensure you have Python 3.12+ installed.
+- 🎵 **Song Recognition**: Click a button to start listening and identifying songs in real-time.
+- 📈 **Fingerprint Visualization**: See a plotted graph showing how your input aligns with known tracks.
+- ⚡ **Responsive & Dark-Themed UI**: Built with Tailwind for elegant, modern interfaces.
+- 🔀 **Electron Integration**: Desktop-friendly, packaged React app.
+- 🔊 **Microphone Input**: Captures 5 seconds of audio on recognition request.
+- 🔄 **Cross-Origin Support**: CORS enabled for React ↔ Flask communication.
+
+---
+
+## 📦 Tech Stack
+
+### Frontend
+- **React 19**
+- **Tailwind CSS 3**
+- **Electron** (via `electron.js`)
+- **@shadcn/ui** (UI primitives)
+- **Concurrently & Wait-on** for syncing React and Electron during dev
+
+### Backend
+- **Flask** as the Python web server (`py_server.py`)
+- **Flask-CORS** for cross-origin requests
+- **Custom Modules**:
+  - `mic_record.py` – records audio input
+  - `generate_fingerprint.py` – creates audio fingerprints
+  - `match.py` – performs fingerprint matching
+  - `plot.py` – generates visual match alignment as base64 image
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ v16
+- **Python** ≥ 3.8
+- Python dependencies (use a virtual environment):
 
 ```bash
 pip install -r requirements.txt
 ```
-
-Or if using `pyproject.toml`:
+Or if using ```pyproject.toml```:
 
 ```bash
-pip install .
+    pip install .
 ```
 
-## 🚀 Usage
+### Install Frontend
 
-### Add a song to the database:
 ```bash
-python main.py add path/to/song.mp3
+cd electron-app
+npm install
 ```
-You’ll be prompted to enter the song name, which will be stored with its fingerprint in SQLite.
 
-### Match a clip against the database:
+---
+
+## ▶️ Running the App
+
+### Start the Flask backend:
 ```bash
-python main.py match path/to/clip.mp3
+python py_server.py
 ```
 
-### Record from microphone and match:
+### Start the Electron + React frontend:
 ```bash
-python main.py mic {duration}
-```
-This command records a short audio clip via your microphone and attempts to match it against the database.
-
-### Example Output
-```
-Matched: Rick Astley - Never Gonna Give You Up (Confidence: 87.5%)
+cd electron-app
+npm run electron
 ```
 
-A match alignment plot will also be displayed showing the timestamp correlation between the input clip and matched songs.
+This launches:
+- Flask server on **http://localhost:5000**
+- React app in Electron pointing to **http://localhost:3000**
 
-## 🗂 Project Structure
+---
 
-```
+## 🧠 How It Works
+
+1. User clicks **Recognize Song**.
+2. React sends a GET request to `/recognize` on the Flask server.
+3. Flask:
+   - Records 5 seconds of audio.
+   - Generates fingerprints.
+   - Matches against known fingerprints.
+   - Returns:
+     - Match results (titles + confidence).
+     - A base64-encoded PNG plot of fingerprint alignment.
+4. React displays results and renders plot in the UI.
+
+---
+
+## 📁 Project Structure
+
+```plaintext
 .
-├── main.py                  # CLI entry point
-├── requirements.txt
-├── pyproject.toml
-├── .env                     # Environment variables for DB connection
-├── src/
-│   ├── database.py              # Handles DB insert/query logic
-│   ├── db_connection.py         # Manages SQLite connection via dotenv
-│   ├── generate_fingerprint.py # Audio loading, STFT, peak detection, hashing
-│   ├── match.py                 # Matching algorithm and scoring
-│   ├── mic_record.py           # Microphone audio recording
-│   └── plot.py                  # Visualization of alignment
-├── audio/                   # Sample audio files
+├── electron-app/
+│   ├── public/
+│   │   └── electron.js          # Main Electron process
+│   ├── src/
+│   │   ├── App.js               # React component with UI and logic
+│   │   ├── App.css              # Tailwind styles
+│   │   └── index.js             # App entry point
+│   └── tailwind.config.js       # Tailwind customization
+├── py_server.py                 # Flask backend
+└── src/
+    ├── mic_record.py            # Audio recording
+    ├── generate_fingerprint.py  # Generate audio fingerprints
+    ├── match.py                 # Match fingerprints
+    └── plot.py                  # Plot match alignment as base64 image
 ```
 
-## 📚 Dependencies
+---
 
-- `librosa` – audio processing
-- `numpy` – array operations
-- `scipy` – peak filtering
-- `matplotlib` – plotting match alignment
-- `mysql-connector-python` – MySQL database driver
-- `sounddevice` – microphone audio capture
-- `soundfile` – save recorded audio as .wav
-- `seaborn` - plotting purposes
+## ⚙️ Scripts
 
-## 🛠 Todo
+In `electron-app/`:
 
-- Improve fingerprint robustness
-- Optimize matching for large databases
-- Add GUI or web interface
+```bash
+npm start         # Starts React only
+npm run electron  # Starts both React and Electron in parallel
+```
+
+---
+
+## 🖼 Fingerprint Plot Example
+
+- Visualizes matching points between input and stored tracks.
+- Rendered using `matplotlib`, sent as base64 string to frontend and shown in `<img />`.
+
+---
+
+## 🛡 CORS Support
+
+Flask backend has CORS enabled for smooth communication between Electron (localhost:3000) and Flask (localhost:5000).
+
+---
+
+## 📌 Notes
+
+- Fingerprint generation and matching logic assumed to be implemented in custom modules under `src/`.
+- App supports hot-reloading for React changes.
+- Uses Tailwind dark mode via `class="dark"` in HTML.
