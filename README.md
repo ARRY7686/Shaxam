@@ -1,6 +1,6 @@
 # 🎧 Shaxam
 
-**Shaxam** is an Advance music recognition desktop application that allows users to identify songs through audio fingerprinting. It offers a sleek UI, real-time audio recording, AI-based song matching, and visualization of audio fingerprint alignment.
+**Shaxam** is an Advance music recognition desktop application that allows users to identify songs through audio fingerprinting. It offers a sleek UI, real-time audio recording, Alogrithmn-based song matching, and visualization of audio fingerprint alignment.
 
 This project combines:
 
@@ -14,11 +14,13 @@ This project combines:
 ## 🌟 Features
 
 - 🎵 **Song Recognition**: Click a button to start listening and identifying songs in real-time.
+- ⚡ **Advance Fingerprinting**: Fingerprints with the help of librosa by converting the audio file in a spectogram and finding the peaks and hashing it.
 - 📈 **Fingerprint Visualization**: See a plotted graph showing how your input aligns with known tracks.
 - ⚡ **Responsive & Dark-Themed UI**: Built with Tailwind for elegant, modern interfaces.
 - 🔀 **Electron Integration**: Desktop-friendly, packaged React app.
 - 🔊 **Microphone Input**: Captures 5 seconds of audio on recognition request.
 - 🔄 **Cross-Origin Support**: CORS enabled for React ↔ Flask communication.
+- 📈 **SHA-1 Hashing**: Uses SHA-1 Hashing to hash the peaks which ensure minimal hash collisions
 
 ---
 
