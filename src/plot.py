@@ -32,7 +32,6 @@ def plot_alignment_as_base64(alignments: dict) -> str:
         if not points:
             continue
 
-        # Convert ms to seconds for readability
         x_vals, y_vals = zip(*points)
         x_vals = [x / 1000.0 for x in x_vals]
         y_vals = [y / 1000.0 for y in y_vals]
@@ -57,7 +56,6 @@ def plot_alignment_as_base64(alignments: dict) -> str:
     plt.legend(title="Songs", fontsize=10)
     plt.tight_layout()
 
-    # Output image to base64 string
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=150)
     plt.close()

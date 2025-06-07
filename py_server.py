@@ -1,9 +1,8 @@
-from flask import Flask, jsonify, request # Make sure to import 'request'
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import traceback
 
-# Assuming these are in your 'src' directory and handle their respective tasks
 from src.mic_record import record_audio
 from src.generate_fingerprint import generate_fingerprint
 from src.match import match_fingerprint
@@ -28,10 +27,10 @@ def recognize():
             audio_path = "uploaded_input.wav"
             uploaded_file.save(audio_path)
         else:
-            record_audio(duration=5, filename=audio_path)
+            record_audio(duration=10, filename=audio_path)
 
         fingerprints = generate_fingerprint(audio_path)
-        results = match_fingerprint(fingerprints)  # returns List[Match]
+        results = match_fingerprint(fingerprints) 
 
         matches = []
         for match in results:
@@ -43,12 +42,10 @@ def recognize():
                 "confidence": round(match.score, 2)
             })
 
-        # If you have no alignment points, skip plotting
         img_base64 = None
 
         if os.path.exists(audio_path):
             os.remove(audio_path)
-
         return jsonify({
             "matches": matches,
             "plot": img_base64

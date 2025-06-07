@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./App.css";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [matches, setMatches] = useState([]);
@@ -35,7 +37,7 @@ function App() {
       setPlot(data.plot || "");
     } catch (err) {
       console.error("Recognition failed", err);
-      alert("Recognition failed");
+      toast.error("Recognition failed");
     }
 
     setLoading(false);
@@ -43,7 +45,7 @@ function App() {
 
   const handleAddSong = async () => {
     if (!spotifyUrl.trim()) {
-      alert("Please enter a Spotify URL");
+      toast.warning("Please enter a Spotify URL");
       return;
     }
 
@@ -61,14 +63,14 @@ function App() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`Song added successfully!`);
+        toast.success(`Song added successfully!`);
         setSpotifyUrl(""); // Clear input
       } else {
-        alert(`Error: ${data.error}`);
+        toast.error(`Error: ${data.error}`);
       }
     } catch (err) {
       console.error("Add song failed", err);
-      alert("Failed to add song");
+      toast.error("Failed to add song");
     }
     setAddingLoading(false);
   };
@@ -241,6 +243,19 @@ function App() {
           </div>
         </div>
       </div>
+      
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 }

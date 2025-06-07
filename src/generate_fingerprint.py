@@ -13,7 +13,7 @@ class Couple:
     anchor_time_ms: int
     song_id: int
 
-TARGET_ZONE_SIZE = 5  # max target points per anchor (Go: 5)
+TARGET_ZONE_SIZE = 5  # max target points per anchor 
 
 
 from typing import Optional

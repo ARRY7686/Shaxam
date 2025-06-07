@@ -28,7 +28,11 @@ def record_audio(duration=5, filename="mic_input.wav", samplerate=44100) -> str:
         print(f"[ERROR] Recording failed: {e}")
         return ""
 
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    # ✅ Only create directory if one exists in the path
+    dir_path = os.path.dirname(filename)
+    if dir_path:
+        os.makedirs(dir_path, exist_ok=True)
+
     write(filename, samplerate, recording)
     print(f"[INFO] Saved recording to: {filename}")
     return filename
