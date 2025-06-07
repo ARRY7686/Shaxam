@@ -22,7 +22,6 @@ This project combines:
 - 🔀 **Electron Integration**: Desktop-friendly, packaged React app.
 - 🔊 **Microphone Input**: Captures 5 seconds of audio on recognition request.
 - 🔄 **Cross-Origin Support**: CORS enabled for React ↔ Flask communication.
-- 📈 **SHA-1 Hashing**: Uses SHA-1 Hashing to hash the peaks which ensure minimal hash collisions.
 - 🆕 **Add Songs**: Add Songs from Spotify Links.
 
 ---
