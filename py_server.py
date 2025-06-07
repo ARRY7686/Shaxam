@@ -11,43 +11,41 @@ from src.plot import plot_alignment_as_base64
 from src.spotify_handler import get_track_details_from_link
 from src.youtube_handler import download_audio_from_youtube
 from src.database import add_song 
+from src.database import get_song_metadata
 
 app = Flask(__name__)
 CORS(app) 
 
 @app.route("/recognize", methods=["POST"])
 def recognize():
-    """Handles song recognition from either mic input or uploaded audio file."""
     try:
         audio_path = "mic_input.wav"
 
-        # Check if a file was uploaded
         if "file" in request.files:
             uploaded_file = request.files["file"]
             if uploaded_file.filename == "":
                 return jsonify({"error": "Uploaded file has no name"}), 400
-
-            # Save uploaded file
             audio_path = "uploaded_input.wav"
             uploaded_file.save(audio_path)
         else:
-            # No file uploaded, record from mic
             record_audio(duration=5, filename=audio_path)
 
-        # Fingerprint generation and matching
         fingerprints = generate_fingerprint(audio_path)
-        results, alignment_points = match_fingerprint(fingerprints, return_matches=True)
+        results = match_fingerprint(fingerprints)  # returns List[Match]
 
-        # Prepare matches
         matches = []
-        if results:
-            for r in results:
-                matches.append({"title": r[0], "confidence": round(r[2], 2)})
+        for match in results:
+            title, artist = get_song_metadata(match.song_id)
+            matches.append({
+                "song_id": match.song_id,
+                "title": title,
+                "artist": artist,
+                "confidence": round(match.score, 2)
+            })
 
-        # Create base64 plot
-        img_base64 = plot_alignment_as_base64(alignment_points)
+        # If you have no alignment points, skip plotting
+        img_base64 = None
 
-        # Clean up if necessary
         if os.path.exists(audio_path):
             os.remove(audio_path)
 
@@ -61,52 +59,42 @@ def recognize():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/add", methods=["POST"])
-def add_song_route(): # Renamed to avoid confusion with the internal helper function name
-    """
-    Handles adding a song to the database from a Spotify URL provided in a POST request.
-    """
+def add_song_route():
     try:
-        data = request.get_json() 
-        spotify_link = data.get("spotify_url") 
-
+        data = request.get_json()
+        spotify_link = data.get("spotify_url")
         if not spotify_link:
-            print("[ERROR] Spotify URL is missing from the request.")
             return jsonify({"error": "Spotify URL is missing"}), 400
-
-        print(f"[INFO] Received Spotify link for adding: {spotify_link}")
 
         track_details = get_track_details_from_link(spotify_link)
         if not track_details:
-            print(f"[ERROR] Could not fetch details for Spotify link: {spotify_link}")
             return jsonify({"error": "Invalid Spotify link or could not fetch details"}), 400
 
         song_name = track_details[0]
         artist_name = track_details[1][0] if track_details[1] else "Unknown Artist"
-        album_name = track_details[2] 
+        album_name = track_details[2]
 
-        print(f"[INFO] Processing song: '{song_name}' by {artist_name}")
+        downloaded_file_path = "downloaded_audio.mp3"
 
-        downloaded_file_path = "downloaded_audio" 
+        checkBool = download_audio_from_youtube(song_name, [artist_name], output_path="downloaded_audio")
+        if not checkBool or not os.path.exists(downloaded_file_path):
+            return jsonify({"error": "Failed to download audio"}), 500
 
-        checkBool = download_audio_from_youtube(song_name, [artist_name], output_path=downloaded_file_path)
-        if not checkBool:
-            return jsonify({"error": "Failed to download audio from YouTube"}), 500
+        # Generate fingerprints from downloaded file
+        fingerprints = generate_fingerprint(downloaded_file_path)
 
-        if not os.path.exists(f"{downloaded_file_path}.mp3"):
-            # This check might still be useful if yt-dlp reports success but file isn't there for some edge case
-            return jsonify({"error": "Downloaded audio file not found despite download attempt"}), 500
-        
-        fingerprints = generate_fingerprint(f"{downloaded_file_path}.mp3")
-        add_song(song_name, fingerprints)
+        # Add song with fingerprints
+        add_song(song_name, artist_name, "", fingerprints)
 
-        os.remove(f"{downloaded_file_path}.mp3")
-        print(f"[INFO] Successfully added '{song_name}' to the database and cleaned up temporary file.")
+        # Clean up file
+        os.remove(downloaded_file_path)
 
         return jsonify({"message": f"Song '{song_name}' by {artist_name} added successfully!"}), 200
 
     except Exception as e:
-        traceback.print_exc() 
-        return jsonify({"error": f"An error occurred while adding the song: {str(e)}"}), 500
+        traceback.print_exc()
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 if __name__ == "__main__":
     print("Starting Flask server on http://localhost:5000")

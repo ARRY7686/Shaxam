@@ -25,12 +25,11 @@ def get_spotify_access_token(client_id, client_secret):
     data = {"grant_type": "client_credentials"}
 
     response = requests.post(token_url, headers=headers, data=data)
-    response.raise_for_status() # Raise an exception for bad status codes
+    response.raise_for_status() 
     token_info = response.json()
     return token_info["access_token"]
 
 def get_track_id_from_link(spotify_link):
-    # Example: https://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6?si=...
     parts = spotify_link.split('/')
     if 'track' in parts:
         track_index = parts.index('track')
@@ -50,9 +49,9 @@ def get_track_details(track_id, access_token):
     response.raise_for_status()
     response_data = response.json()
     return(
-        [response_data["name"],  # Track name
-        [artist["name"] for artist in response_data["artists"]],  # List of artist names
-        response_data["album"]["name"]]  # Album name
+        [response_data["name"],  
+        [artist["name"] for artist in response_data["artists"]], 
+        response_data["album"]["name"]]
     )
 
 

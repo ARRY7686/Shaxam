@@ -87,7 +87,7 @@ function App() {
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
               Shaxam
             </h1>
-            <p className="text-gray-400 text-lg">Discover music with AI-powered recognition</p>
+            <p className="text-gray-400 text-lg">Discover music with Audio fingerprinting </p>
           </div>
 
           {/* Add Spotify Track */}
