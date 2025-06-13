@@ -6,7 +6,7 @@ import traceback
 from src.mic_record import record_audio
 from src.generate_fingerprint import generate_fingerprint
 from src.match import match_fingerprint
-from src.plot import plot_alignment_as_base64
+from src.plot import get_alignment_data
 from src.spotify_handler import get_track_details_from_link
 from src.youtube_handler import download_audio_from_youtube
 from src.database import add_song 
@@ -14,6 +14,7 @@ from src.database import get_song_metadata
 
 app = Flask(__name__)
 CORS(app) 
+
 
 @app.route("/recognize", methods=["POST"])
 def recognize():
@@ -30,9 +31,11 @@ def recognize():
             record_audio(duration=10, filename=audio_path)
 
         fingerprints = generate_fingerprint(audio_path)
-        results = match_fingerprint(fingerprints) 
+        results = match_fingerprint(fingerprints)
 
         matches = []
+        alignments = {}
+
         for match in results:
             title, artist = get_song_metadata(match.song_id)
             matches.append({
@@ -41,14 +44,16 @@ def recognize():
                 "artist": artist,
                 "confidence": round(match.score, 2)
             })
+            if match.points:
+                alignments[f"{title}"] = match.points
 
-        img_base64 = None
 
         if os.path.exists(audio_path):
             os.remove(audio_path)
+
         return jsonify({
             "matches": matches,
-            "plot": img_base64
+            "plot_data": get_alignment_data(alignments)  # ✅ Chart.js compatible format
         })
 
     except Exception as e:

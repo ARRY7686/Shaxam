@@ -3,9 +3,81 @@ import "./App.css";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import {
+  Chart,
+  RadialLinearScale,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title
+} from 'chart.js';
+import { PolarArea } from 'react-chartjs-2';
+
+Chart.register(RadialLinearScale, ArcElement, Tooltip, Legend, Title);
+
+// Polar Area Chart Component
+const MatchConfidencePolarChart = ({ matches }) => {
+  if (!matches || matches.length === 0) return null;
+
+  const labels = matches.map(m =>
+    m.title.length > 25 ? m.title.slice(0, 25) + "…" : m.title
+  );
+
+  const data = matches.map(m => m.normalized);
+  const backgroundColors = labels.map(
+    (_, i) => `hsl(${(i * 360) / labels.length}, 70%, 60%)`
+  );
+
+  return (
+    <PolarArea
+      data={{
+        labels,
+        datasets: [
+          {
+            label: 'Confidence (%)',
+            data,
+            backgroundColor: backgroundColors,
+            borderColor: '#222',
+            borderWidth: 1,
+          }
+        ]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+        },
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#fff',
+              font: { size: 12 }
+            }
+          },
+          title: {
+            display: true,
+            text: 'Matched Songs (Confidence)',
+            color: '#fff',
+            font: { size: 18, weight: 'bold' }
+          }
+        },
+        scales: {
+          r: {
+            ticks: { color: '#ccc' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            angleLines: { color: 'rgba(255,255,255,0.2)' }
+          }
+        }
+      }}
+    />
+  );
+};
+
 function App() {
   const [matches, setMatches] = useState([]);
-  const [plot, setPlot] = useState("");
   const [loading, setLoading] = useState(false);
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [addingLoading, setAddingLoading] = useState(false);
@@ -14,14 +86,12 @@ function App() {
   const handleRecognize = async () => {
     setLoading(true);
     setMatches([]);
-    setPlot("");
 
     try {
       let response;
       if (selectedFile) {
         const formData = new FormData();
         formData.append("file", selectedFile);
-
         response = await fetch("http://localhost:5000/recognize", {
           method: "POST",
           body: formData,
@@ -34,7 +104,6 @@ function App() {
 
       const data = await response.json();
       setMatches(data.matches || []);
-      setPlot(data.plot || "");
     } catch (err) {
       console.error("Recognition failed", err);
       toast.error("Recognition failed");
@@ -53,18 +122,14 @@ function App() {
     try {
       const res = await fetch("http://localhost:5000/add", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          spotify_url: spotifyUrl
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spotify_url: spotifyUrl })
       });
 
       const data = await res.json();
       if (res.ok) {
         toast.success(`Song added successfully!`);
-        setSpotifyUrl(""); // Clear input
+        setSpotifyUrl("");
       } else {
         toast.error(`Error: ${data.error}`);
       }
@@ -74,6 +139,13 @@ function App() {
     }
     setAddingLoading(false);
   };
+
+  // ✅ Normalize confidence scores
+  const maxConfidence = Math.max(...matches.map(m => m.confidence || 0)) || 1;
+  const normalizedMatches = matches.map(m => ({
+    ...m,
+    normalized: Math.round((m.confidence / maxConfidence) * 100)
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900 text-white font-inter">
@@ -89,7 +161,7 @@ function App() {
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
               Shaxam
             </h1>
-            <p className="text-gray-400 text-lg">Discover music with Audio fingerprinting </p>
+            <p className="text-gray-400 text-lg">Discover music with Audio fingerprinting</p>
           </div>
 
           {/* Add Spotify Track */}
@@ -159,24 +231,22 @@ function App() {
             </button>
           </div>
 
-          {/* Match Results */}
+          {/* Match Results & Chart */}
           <div className="grid lg:grid-cols-2 gap-8">
+            {/* Match Results */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl">
               <h2 className="text-2xl font-semibold mb-6 flex items-center">
                 <span className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3"></span>
                 Match Results
               </h2>
               <div className="space-y-4">
-                {matches.length === 0 ? (
+                {normalizedMatches.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl text-gray-500">🔍</span>
-                    </div>
                     <p className="text-gray-400">No matches found yet</p>
                     <p className="text-sm text-gray-500 mt-2">Click the button above to start recognition</p>
                   </div>
                 ) : (
-                  matches.map((match, index) => (
+                  normalizedMatches.map((match, index) => (
                     <div
                       key={index}
                       className="bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
@@ -190,11 +260,11 @@ function App() {
                               <div className="w-24 h-2 bg-gray-600 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-gradient-to-r from-green-500 to-blue-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min(match.confidence * 100, 100)}%` }}
+                                  style={{ width: `${match.normalized}%` }}
                                 ></div>
                               </div>
                               <span className="text-blue-400 font-medium">
-                                {(match.confidence * 100).toFixed(1)}%
+                                {match.normalized}%
                               </span>
                             </div>
                           </div>
@@ -207,43 +277,25 @@ function App() {
               </div>
             </div>
 
-            {/* Plot Display */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl">
+            {/* Polar Area Chart */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl p-6">
               <h2 className="text-2xl font-semibold mb-6 flex items-center">
                 <span className="w-2 h-8 bg-gradient-to-b from-green-500 to-blue-500 rounded-full mr-3"></span>
                 Audio Analysis
               </h2>
-              <div className="h-64 flex items-center justify-center">
-                {plot ? (
-                  <div className="w-full h-full rounded-xl overflow-hidden bg-gray-900/50 p-4">
-                    <img
-                      src={`data:image/png;base64,${plot}`}
-                      alt="Audio analysis visualization"
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl text-gray-500">📊</span>
-                    </div>
-                    <p className="text-gray-400">Audio visualization will appear here</p>
-                    <p className="text-sm text-gray-500 mt-2">Start recognition to see the analysis</p>
-                  </div>
-                )}
+              <div className="w-full h-[500px] bg-gray-900/50 p-6 rounded-xl overflow-hidden">
+                <MatchConfidencePolarChart matches={normalizedMatches} />
               </div>
             </div>
           </div>
 
           {/* Footer */}
           <div className="text-center mt-12 pt-8 border-t border-gray-700/50">
-            <p className="text-gray-500 text-sm">
-              Powered by advanced audio fingerprinting technology
-            </p>
+            <p className="text-gray-500 text-sm">Powered by advanced audio fingerprinting technology</p>
           </div>
         </div>
       </div>
-      
+
       <ToastContainer
         position="top-right"
         autoClose={3000}
