@@ -1,8 +1,6 @@
-import React, { useState } from "react";
-import "./App.css";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
+import React, { useEffect, useState } from "react";
+import { animate } from "animejs";
+import gsap from "gsap";
 import {
   Chart,
   RadialLinearScale,
@@ -10,22 +8,24 @@ import {
   Tooltip,
   Legend,
   Title
-} from 'chart.js';
-import { PolarArea } from 'react-chartjs-2';
+} from "chart.js";
+import { PolarArea } from "react-chartjs-2";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
 
 Chart.register(RadialLinearScale, ArcElement, Tooltip, Legend, Title);
 
-// Polar Area Chart Component
 const MatchConfidencePolarChart = ({ matches }) => {
   if (!matches || matches.length === 0) return null;
 
-  const labels = matches.map(m =>
+  const labels = matches.map((m) =>
     m.title.length > 25 ? m.title.slice(0, 25) + "…" : m.title
   );
 
-  const data = matches.map(m => m.normalized);
+  const data = matches.map((m) => m.normalized);
   const backgroundColors = labels.map(
-    (_, i) => `hsl(${(i * 360) / labels.length}, 70%, 60%)`
+    (_, i) => `hsl(${(i * 360) / labels.length}, 40%, 50%)`
   );
 
   return (
@@ -34,11 +34,11 @@ const MatchConfidencePolarChart = ({ matches }) => {
         labels,
         datasets: [
           {
-            label: 'Confidence (%)',
+            label: "Confidence (%)",
             data,
             backgroundColor: backgroundColors,
-            borderColor: '#222',
-            borderWidth: 1,
+            borderColor: "#111",
+            borderWidth: 1
           }
         ]
       }}
@@ -47,28 +47,25 @@ const MatchConfidencePolarChart = ({ matches }) => {
         maintainAspectRatio: false,
         animation: {
           animateRotate: true,
-          animateScale: true,
+          animateScale: true
         },
         plugins: {
           legend: {
-            position: 'right',
-            labels: {
-              color: '#fff',
-              font: { size: 12 }
-            }
+            position: "right",
+            labels: { color: "#000", font: { size: 12 } }
           },
           title: {
             display: true,
-            text: 'Matched Songs (Confidence)',
-            color: '#fff',
-            font: { size: 18, weight: 'bold' }
+            text: "Matched Songs",
+            color: "#111",
+            font: { size: 18, weight: "bold" }
           }
         },
         scales: {
           r: {
-            ticks: { color: '#ccc' },
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            angleLines: { color: 'rgba(255,255,255,0.2)' }
+            ticks: { color: "#444" },
+            grid: { color: "#ccc" },
+            angleLines: { color: "#ccc" }
           }
         }
       }}
@@ -76,33 +73,55 @@ const MatchConfidencePolarChart = ({ matches }) => {
   );
 };
 
-function App() {
+export default function App() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [spotifyUrl, setSpotifyUrl] = useState("");
-  const [addingLoading, setAddingLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+
+  useEffect(() => {
+    animate(".header-title", {
+      opacity: [0, 1],
+      transform: ["translateY(-50px)", "translateY(0px)"],
+      easing: "ease-out",
+      duration: 1200
+    });
+
+    gsap.to(".section", {
+      opacity: 1,
+      y: 0,
+      stagger: 0.2,
+      ease: "power2.out",
+      duration: 1
+    });
+  }, [matches]);
+
+  const maxConfidence = Math.max(...matches.map((m) => m.confidence || 0)) || 1;
+  const normalizedMatches = matches.map((m) => ({
+    ...m,
+    normalized: Math.round((m.confidence / maxConfidence) * 100)
+  }));
 
   const handleRecognize = async () => {
     setLoading(true);
     setMatches([]);
 
     try {
-      let response;
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        response = await fetch("http://localhost:5000/recognize", {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        response = await fetch("http://localhost:5000/recognize", {
-          method: "POST",
-        });
-      }
+      const formData = new FormData();
+      if (selectedFile) formData.append("file", selectedFile);
+
+      const response = await fetch("http://localhost:5000/recognize", {
+        method: "POST",
+        body: formData
+      });
 
       const data = await response.json();
+      if (data.matches?.length > 0) {
+        toast.success("Matches found!");
+      } else {
+        toast.info("No matches found.");
+      }
       setMatches(data.matches || []);
     } catch (err) {
       console.error("Recognition failed", err);
@@ -117,185 +136,113 @@ function App() {
       toast.warning("Please enter a Spotify URL");
       return;
     }
-
-    setAddingLoading(true);
+    setAdding(true);
     try {
       const res = await fetch("http://localhost:5000/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spotify_url: spotifyUrl })
       });
-
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Song added successfully!`);
+        toast.success("Song added successfully!");
         setSpotifyUrl("");
       } else {
-        toast.error(`Error: ${data.error}`);
+        toast.error(data.error || "Failed to add song");
       }
     } catch (err) {
-      console.error("Add song failed", err);
+      console.error("Add failed", err);
       toast.error("Failed to add song");
     }
-    setAddingLoading(false);
+    setAdding(false);
   };
 
-  // ✅ Normalize confidence scores
-  const maxConfidence = Math.max(...matches.map(m => m.confidence || 0)) || 1;
-  const normalizedMatches = matches.map(m => ({
-    ...m,
-    normalized: Math.round((m.confidence / maxConfidence) * 100)
-  }));
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900 text-white font-inter">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
+    <div className="min-h-screen bg-white text-black font-sans p-6">
+      <header className="text-center py-12">
+        <h1 className="header-title text-5xl font-black tracking-tight opacity-0">
+          Shaxam 🎧
+        </h1>
+        <p className="text-lg mt-2 text-gray-800">
+          Audio Fingerprinting, Simplified.
+        </p>
+      </header>
 
-      <div className="relative z-10 px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg shadow-blue-500/25">
-              <span className="text-3xl">🎧</span>
-            </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
-              Shaxam
-            </h1>
-            <p className="text-gray-400 text-lg">Discover music with Audio fingerprinting</p>
-          </div>
-
-          {/* Add Spotify Track */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <span className="w-2 h-6 bg-gradient-to-b from-green-500 to-green-400 rounded-full mr-3"></span>
-              Add Spotify Track
-            </h2>
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={spotifyUrl}
-                  onChange={(e) => setSpotifyUrl(e.target.value)}
-                  placeholder="Paste Spotify track link here..."
-                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                />
-              </div>
-              <button
-                onClick={handleAddSong}
-                disabled={addingLoading || !spotifyUrl.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 rounded-lg font-semibold text-white hover:from-green-500 hover:to-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center space-x-2"
-              >
-                {addingLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Adding...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🎵</span>
-                    <span>Add Song</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* File Upload */}
-          <div className="text-center mb-6">
+      <div className="max-w-4xl mx-auto space-y-12">
+        {/* Add Track */}
+        <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
+          <h2 className="text-2xl font-semibold mb-4 text-black">Add a Spotify Song</h2>
+          <div className="flex gap-4">
             <input
-              type="file"
-              accept="audio/*"
-              onChange={(e) => setSelectedFile(e.target.files[0])}
-              className="text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+              type="text"
+              placeholder="Enter Spotify track URL"
+              value={spotifyUrl}
+              onChange={(e) => setSpotifyUrl(e.target.value)}
+              className="flex-1 border border-gray-600 px-4 py-2 rounded bg-white text-black"
             />
-            <p className="text-gray-500 text-sm mt-2">Upload an audio file (or leave empty to use mic)</p>
-          </div>
-
-          {/* Recognize Button */}
-          <div className="text-center mb-12">
             <button
-              onClick={handleRecognize}
-              disabled={loading}
-              className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              onClick={handleAddSong}
+              className="px-4 py-2 border border-gray-800 bg-gray-900 text-white hover:bg-gray-700 transition"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center space-x-3">
-                <span className="text-2xl">{loading ? "🎙️" : "🎵"}</span>
-                <span>{loading ? "Processing..." : "Recognize Song"}</span>
-              </div>
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin ml-2"></div>
-                </div>
-              )}
+              {adding ? "Adding..." : "Add"}
             </button>
           </div>
+        </div>
 
-          {/* Match Results & Chart */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Match Results */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 shadow-xl">
-              <h2 className="text-2xl font-semibold mb-6 flex items-center">
-                <span className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3"></span>
-                Match Results
-              </h2>
-              <div className="space-y-4">
-                {normalizedMatches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-400">No matches found yet</p>
-                    <p className="text-sm text-gray-500 mt-2">Click the button above to start recognition</p>
+        {/* Upload + Recognize */}
+        <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
+          <h2 className="text-2xl font-semibold mb-4 text-black">Recognize Audio</h2>
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setSelectedFile(e.target.files[0])}
+            className="mb-4 text-black"
+          />
+          <button
+            onClick={handleRecognize}
+            className="px-6 py-2 border border-gray-800 bg-gray-900 text-white hover:bg-gray-700 transition"
+          >
+            {loading ? "Listening..." : "Recognize"}
+          </button>
+        </div>
+
+        {/* Match Results */}
+        <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
+          <h2 className="text-2xl font-semibold mb-6 text-black">Match Results</h2>
+          {normalizedMatches.length === 0 ? (
+            <p className="text-gray-800">No matches yet. Try recognizing!</p>
+          ) : (
+            <div className="space-y-4">
+              {normalizedMatches.map((match, i) => (
+                <div
+                  key={i}
+                  className="p-4 border border-gray-400 bg-white rounded-lg flex justify-between items-center"
+                >
+                  <div>
+                    <h3 className="font-bold text-lg text-black">{match.title}</h3>
+                    <p className="text-sm text-gray-800">
+                      Confidence: {match.normalized}%
+                    </p>
                   </div>
-                ) : (
-                  normalizedMatches.map((match, index) => (
+                  <div className="h-2 w-32 bg-gray-200 rounded overflow-hidden">
                     <div
-                      key={index}
-                      className="bg-gray-700/30 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white text-lg mb-1">{match.title}</h3>
-                          <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-400">Confidence:</span>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-24 h-2 bg-gray-600 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-green-500 to-blue-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${match.normalized}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-blue-400 font-medium">
-                                {match.normalized}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-2xl ml-4">🎵</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                      className="bg-black h-full"
+                      style={{ width: `${match.normalized}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
+        </div>
 
-            {/* Polar Area Chart */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl p-6">
-              <h2 className="text-2xl font-semibold mb-6 flex items-center">
-                <span className="w-2 h-8 bg-gradient-to-b from-green-500 to-blue-500 rounded-full mr-3"></span>
-                Audio Analysis
-              </h2>
-              <div className="w-full h-[500px] bg-gray-900/50 p-6 rounded-xl overflow-hidden">
-                <MatchConfidencePolarChart matches={normalizedMatches} />
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center mt-12 pt-8 border-t border-gray-700/50">
-            <p className="text-gray-500 text-sm">Powered by advanced audio fingerprinting technology</p>
-          </div>
+        {/* Polar Chart */}
+        <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 h-[500px] transition-opacity">
+          <MatchConfidencePolarChart matches={normalizedMatches} />
         </div>
       </div>
 
+      {/* Toastify Container */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -311,5 +258,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
