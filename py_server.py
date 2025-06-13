@@ -2,8 +2,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import traceback
-
-from src.mic_record import record_audio
+try:
+    from src.mic_record import record_audio
+except ImportError:
+    record_audio = None  # Fallback if mic_record is not available
 from src.generate_fingerprint import generate_fingerprint
 from src.match import match_fingerprint
 from src.plot import get_alignment_data
