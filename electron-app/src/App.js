@@ -15,6 +15,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
 Chart.register(RadialLinearScale, ArcElement, Tooltip, Legend, Title);
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const MatchConfidencePolarChart = ({ matches }) => {
   if (!matches || matches.length === 0) return null;
@@ -111,7 +112,7 @@ export default function App() {
       const formData = new FormData();
       if (selectedFile) formData.append("file", selectedFile);
 
-      const response = await fetch("http://localhost:5000/recognize", {
+      const response = await fetch(`${API_BASE_URL}/recognize`, {
         method: "POST",
         body: formData
       });
@@ -138,7 +139,7 @@ export default function App() {
     }
     setAdding(true);
     try {
-      const res = await fetch("http://localhost:5000/add", {
+      const res = await fetch(`${API_BASE_URL}/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spotify_url: spotifyUrl })
