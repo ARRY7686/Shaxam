@@ -2,21 +2,22 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import traceback
+
+from src.generate_fingerprint import generate_fingerprint
+from src.match import match_fingerprint
+from src.spotify_handler import get_track_details_from_link
+from src.youtube_handler import download_audio_from_youtube
+from src.database import add_song, get_song_metadata
+from src.plot import get_alignment_data
+
+# Conditionally import mic recording (works locally only)
 try:
     from src.mic_record import record_audio
 except ImportError:
-    record_audio = None  # Fallback if mic_record is not available
-from src.generate_fingerprint import generate_fingerprint
-from src.match import match_fingerprint
-from src.plot import get_alignment_data
-from src.spotify_handler import get_track_details_from_link
-from src.youtube_handler import download_audio_from_youtube
-from src.database import add_song 
-from src.database import get_song_metadata
+    record_audio = None
 
 app = Flask(__name__)
-CORS(app) 
-
+CORS(app)
 
 @app.route("/recognize", methods=["POST"])
 def recognize():
@@ -30,14 +31,16 @@ def recognize():
             audio_path = "uploaded_input.wav"
             uploaded_file.save(audio_path)
         else:
-            record_audio(duration=10, filename=audio_path)
+            if record_audio is not None:
+                record_audio(duration=10, filename=audio_path)
+            else:
+                return jsonify({"error": "Microphone input is not supported on this server."}), 400
 
         fingerprints = generate_fingerprint(audio_path)
         results = match_fingerprint(fingerprints)
 
         matches = []
         alignments = {}
-
         for match in results:
             title, artist = get_song_metadata(match.song_id)
             matches.append({
@@ -48,7 +51,6 @@ def recognize():
             })
             if match.points:
                 alignments[f"{title}"] = match.points
-
 
         if os.path.exists(audio_path):
             os.remove(audio_path)
@@ -79,18 +81,13 @@ def add_song_route():
         album_name = track_details[2]
 
         downloaded_file_path = "downloaded_audio.mp3"
-
         checkBool = download_audio_from_youtube(song_name, [artist_name], output_path="downloaded_audio")
         if not checkBool or not os.path.exists(downloaded_file_path):
             return jsonify({"error": "Failed to download audio"}), 500
 
-        # Generate fingerprints from downloaded file
         fingerprints = generate_fingerprint(downloaded_file_path)
-
-        # Add song with fingerprints
         add_song(song_name, artist_name, "", fingerprints)
 
-        # Clean up file
         os.remove(downloaded_file_path)
 
         return jsonify({"message": f"Song '{song_name}' by {artist_name} added successfully!"}), 200
@@ -102,4 +99,4 @@ def add_song_route():
 
 if __name__ == "__main__":
     print("Starting Flask server on http://localhost:5000")
-    app.run(port=5000, debug=True) 
+    app.run(port=5000, debug=True)
