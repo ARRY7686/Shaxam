@@ -2,13 +2,15 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import traceback
-
+import json
+import numpy as np
+import sys
 from src.generate_fingerprint import generate_fingerprint
 from src.match import match_fingerprint
 from src.spotify_handler import get_track_details_from_link
 from src.youtube_handler import download_audio_from_youtube
 from src.database import add_song, get_song_metadata
-from src.plot import get_alignment_data
+from src.plot import get_alignment_data, get_spectrogram_with_alignments
 
 # Conditionally import mic recording (works locally only)
 try:
@@ -19,8 +21,13 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)
 
+# Global state for spectrogram access
+last_audio_path = None
+last_alignments = {}
+
 @app.route("/recognize", methods=["POST"])
 def recognize():
+    global last_audio_path, last_alignments
     try:
         audio_path = "mic_input.wav"
 
@@ -52,17 +59,45 @@ def recognize():
             if match.points:
                 alignments[f"{title}"] = match.points
 
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+        last_audio_path = audio_path
+        last_alignments = alignments
 
         return jsonify({
             "matches": matches,
-            "plot_data": get_alignment_data(alignments)  # ✅ Chart.js compatible format
+            "plot_data": get_alignment_data(alignments)
         })
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+@app.route("/spectrogram", methods=["GET"])
+def spectrogram():
+    global last_audio_path, last_alignments
+    try:
+        if not last_audio_path or not last_alignments:
+            return jsonify({"error": "No recognition data available"}), 400
+
+        result = get_spectrogram_with_alignments(last_audio_path, last_alignments)
+
+        # 🔧 Fix: Ensure all NumPy types are converted to JSON-serializable Python types
+        def convert(o):
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+            if isinstance(o, (np.float32, np.float64)):
+                return float(o)
+            if isinstance(o, (np.int32, np.int64)):
+                return int(o)
+            return o
+
+        serializable_result = json.loads(json.dumps(result, default=convert))
+        print("Spectrogram response size (bytes):", sys.getsizeof(json.dumps(serializable_result)))
+        return jsonify(serializable_result)
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/add", methods=["POST"])
 def add_song_route():
@@ -95,7 +130,6 @@ def add_song_route():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
 
 if __name__ == "__main__":
     print("Starting Flask server on http://localhost:5000")

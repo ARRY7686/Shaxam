@@ -7,15 +7,16 @@ import {
   ArcElement,
   Tooltip,
   Legend,
-  Title
+  Title,
 } from "chart.js";
 import { PolarArea } from "react-chartjs-2";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SpectrogramChart from "./components/SpectogramChart";
 import "./App.css";
 
 Chart.register(RadialLinearScale, ArcElement, Tooltip, Legend, Title);
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = "http://localhost:5000";
 
 const MatchConfidencePolarChart = ({ matches }) => {
   if (!matches || matches.length === 0) return null;
@@ -39,36 +40,36 @@ const MatchConfidencePolarChart = ({ matches }) => {
             data,
             backgroundColor: backgroundColors,
             borderColor: "#111",
-            borderWidth: 1
-          }
-        ]
+            borderWidth: 1,
+          },
+        ],
       }}
       options={{
         responsive: true,
         maintainAspectRatio: false,
         animation: {
           animateRotate: true,
-          animateScale: true
+          animateScale: true,
         },
         plugins: {
           legend: {
             position: "right",
-            labels: { color: "#000", font: { size: 12 } }
+            labels: { color: "#000", font: { size: 12 } },
           },
           title: {
             display: true,
             text: "Matched Songs",
             color: "#111",
-            font: { size: 18, weight: "bold" }
-          }
+            font: { size: 18, weight: "bold" },
+          },
         },
         scales: {
           r: {
             ticks: { color: "#444" },
             grid: { color: "#ccc" },
-            angleLines: { color: "#ccc" }
-          }
-        }
+            angleLines: { color: "#ccc" },
+          },
+        },
       }}
     />
   );
@@ -76,6 +77,8 @@ const MatchConfidencePolarChart = ({ matches }) => {
 
 export default function App() {
   const [matches, setMatches] = useState([]);
+  const [plotData, setPlotData] = useState(null); // 🆕
+  const [specData, setSpecData] = useState(null); // 🆕
   const [loading, setLoading] = useState(false);
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [adding, setAdding] = useState(false);
@@ -86,7 +89,7 @@ export default function App() {
       opacity: [0, 1],
       transform: ["translateY(-50px)", "translateY(0px)"],
       easing: "ease-out",
-      duration: 1200
+      duration: 1200,
     });
 
     gsap.to(".section", {
@@ -94,41 +97,42 @@ export default function App() {
       y: 0,
       stagger: 0.2,
       ease: "power2.out",
-      duration: 1
+      duration: 1,
     });
   }, [matches]);
 
   const maxConfidence = Math.max(...matches.map((m) => m.confidence || 0)) || 1;
   const normalizedMatches = matches.map((m) => ({
     ...m,
-    normalized: Math.round((m.confidence / maxConfidence) * 100)
+    normalized: Math.round((m.confidence / maxConfidence) * 100),
   }));
 
   const handleRecognize = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
     setLoading(true);
-    setMatches([]);
-
     try {
-      const formData = new FormData();
-      if (selectedFile) formData.append("file", selectedFile);
-
-      const response = await fetch(`${API_BASE_URL}/recognize`, {
+      const res = await fetch(`${API_BASE_URL}/recognize`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
-
-      const data = await response.json();
-      if (data.matches?.length > 0) {
-        toast.success("Matches found!");
-      } else {
-        toast.info("No matches found.");
-      }
+      const data = await res.json();
       setMatches(data.matches || []);
-    } catch (err) {
-      console.error("Recognition failed", err);
-      toast.error("Recognition failed");
-    }
+      setPlotData(data.plot_data || {}); // 🆕
 
+      // 🔥 Minimal addition: fetch spectrogram
+      const specRes = await fetch(`${API_BASE_URL}/spectrogram`);
+      const specJson = await specRes.json();
+      setSpecData(specJson); // 🆕
+    } catch (error) {
+      console.error("Recognition failed:", error);
+      setMatches([]);
+      setPlotData(null); // 🆕
+      setSpecData(null); // 🆕
+    }
     setLoading(false);
   };
 
@@ -142,7 +146,7 @@ export default function App() {
       const res = await fetch(`${API_BASE_URL}/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ spotify_url: spotifyUrl })
+        body: JSON.stringify({ spotify_url: spotifyUrl }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -172,7 +176,9 @@ export default function App() {
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Add Track */}
         <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
-          <h2 className="text-2xl font-semibold mb-4 text-black">Add a Spotify Song</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-black">
+            Add a Spotify Song
+          </h2>
           <div className="flex gap-4">
             <input
               type="text"
@@ -192,7 +198,9 @@ export default function App() {
 
         {/* Upload + Recognize */}
         <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
-          <h2 className="text-2xl font-semibold mb-4 text-black">Recognize Audio</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-black">
+            Recognize Audio
+          </h2>
           <input
             type="file"
             accept="audio/*"
@@ -203,13 +211,15 @@ export default function App() {
             onClick={handleRecognize}
             className="px-6 py-2 border border-gray-800 bg-gray-900 text-white hover:bg-gray-700 transition"
           >
-            {loading ? "Listening..." : "Recognize"}
+            {loading ? "Waiting..." : "Recognize"}
           </button>
         </div>
 
         {/* Match Results */}
         <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
-          <h2 className="text-2xl font-semibold mb-6 text-black">Match Results</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-black">
+            Match Results
+          </h2>
           {normalizedMatches.length === 0 ? (
             <p className="text-gray-800">No matches yet. Try recognizing!</p>
           ) : (
@@ -220,7 +230,9 @@ export default function App() {
                   className="p-4 border border-gray-400 bg-white rounded-lg flex justify-between items-center"
                 >
                   <div>
-                    <h3 className="font-bold text-lg text-black">{match.title}</h3>
+                    <h3 className="font-bold text-lg text-black">
+                      {match.title}
+                    </h3>
                     <p className="text-sm text-gray-800">
                       Confidence: {match.normalized}%
                     </p>
@@ -241,6 +253,27 @@ export default function App() {
         <div className="section opacity-0 border border-gray-600 bg-gray-100 rounded-lg p-6 h-[500px] transition-opacity">
           <MatchConfidencePolarChart matches={normalizedMatches} />
         </div>
+
+        {/* Spectrogram Chart */}
+        {specData && plotData && (
+          <div className="section  border border-gray-600 bg-gray-100 rounded-lg p-6 transition-opacity">
+            <h2 className="text-2xl font-semibold mb-4 text-black">
+              Spectrogram
+            </h2>
+            <SpectrogramChart
+              data={{
+                spectrogram: specData?.spectrogram || [],
+                alignments:
+                  specData?.alignments && matches.length > 0
+                    ? {
+                        [matches[0].title]:
+                          specData.alignments[matches[0].title],
+                      }
+                    : {},
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Toastify Container */}
