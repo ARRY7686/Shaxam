@@ -80,7 +80,6 @@ def spectrogram():
 
         result = get_spectrogram_with_alignments(last_audio_path, last_alignments)
 
-        # 🔧 Fix: Ensure all NumPy types are converted to JSON-serializable Python types
         def convert(o):
             if isinstance(o, np.ndarray):
                 return o.tolist()
@@ -91,6 +90,12 @@ def spectrogram():
             return o
 
         serializable_result = json.loads(json.dumps(result, default=convert))
+
+        if os.path.exists(last_audio_path):
+            os.remove(last_audio_path)
+            last_audio_path = None  
+            last_alignments = {}    
+
         print("Spectrogram response size (bytes):", sys.getsizeof(json.dumps(serializable_result)))
         return jsonify(serializable_result)
 

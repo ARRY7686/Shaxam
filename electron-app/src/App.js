@@ -224,7 +224,7 @@ export default function App() {
             <p className="text-gray-800">No matches yet. Try recognizing!</p>
           ) : (
             <div className="space-y-4">
-              {normalizedMatches.map((match, i) => (
+              {normalizedMatches.slice(0,4).map((match, i) => (
                 <div
                   key={i}
                   className="p-4 border border-gray-400 bg-white rounded-lg flex justify-between items-center"
